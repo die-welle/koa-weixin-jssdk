@@ -1,0 +1,54 @@
+{
+  "name": "koa-weixin-jssdk",
+  "description": "Koa weixin jssdk middleware",
+  "version": "1.0.0",
+  "main": "lib/koa-weixin-jssdk.js",
+  "scripts": {
+    "start": "nodemon example -w src -w example",
+    "compile": "mkdir -p lib && babel src/index.js --out-file lib/index.js",
+    "prepublish": "rimraf lib && mkdirp lib && npm run compile"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:die-welle/koa-weixin-jssdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/die-welle/koa-weixin-jssdk/issues"
+  },
+  "homepage": "https://github.com/die-welle/koa-weixin-jssdk#readme",
+  "maintainers": [
+    {
+      "name": "Cap32",
+      "email": "webb.png@gmail.com"
+    },
+    {
+      "name": "JC"
+    }
+  ],
+  "licenses": [
+    {
+      "type": "MIT"
+    }
+  ],
+  "engines": {
+    "node": ">= 4.0.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.4.0",
+    "babel-plugin-add-module-exports": "^0.1.2",
+    "babel-preset-es2015-without-regenerator": "^1.0.1",
+    "babel-preset-stage-0": "^6.3.13",
+    "babel-register": "^6.3.13",
+    "koa": "^1.1.2",
+    "koa-body": "^1.4.0",
+    "mkdirp": "^0.5.1",
+    "nodemon": "^1.8.1",
+    "output-host": "^1.1.0",
+    "rimraf": "^2.5.2"
+  },
+  "dependencies": {
+    "koa-router": "^5.3.0",
+    "node-fetch": "^1.3.3",
+    "jssha": "^2.0.2"
+  }
+}
