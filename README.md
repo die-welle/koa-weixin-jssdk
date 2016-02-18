@@ -15,10 +15,12 @@ import weixinJSSDK from '../src';
 const port = process.env.PORT || 3000;
 const app = koa();
 
+app.use(koaBody());
+
 app.use(weixinJSSDK({
     appId: '<YOUR_APP_ID>', // [required] weixin-jssdk app id
     
-    secret: '<YOUR_SECRET>', // [required] weixin-jssdk secret
+    secret: '<YOUR_SECRET>', // weixin-jssdk secret
  
     pathName: '/jssdk', // [optional] eg: http://imyourfather.com/jssdk
 
@@ -38,6 +40,31 @@ app.listen(port);
     $ git clone <this_git_repo>
     $ npm i
     $ npm start
+
+
+## Third-party weixin service
+
+Maybe you already have a Third-party weixin service and have a access token, you could use custom `fetchTicket` function instead of `secret`.
+
+The `fetchTicket` function must return `{ ticket, expires_in }` as a Promise instance.
+
+```js
+
+app.use(weixinJSSDK({
+    appId: '<YOUR_APP_ID>', // [required]
+    
+    fetchTicket() {
+        return fetch(/* you_third_party_weixin_fetch_ticket_url */);
+        // Must return a promise;
+        // The responsed json must include `ticket` and `expires_in` fields.
+    }
+ 
+    // other configs...
+
+}));
+
+```
+
 
 ## Installation
 

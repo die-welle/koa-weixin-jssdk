@@ -2,6 +2,8 @@
 import Router from 'koa-router';
 import fetch from 'node-fetch';
 import JsSHA from 'jssha';
+import invariant from 'invariant';
+import { name as packageName } from '../package.json';
 
 const TOKEN_URL = 'https://api.weixin.qq.com/cgi-bin/token';
 const TICKET_URL = 'https://api.weixin.qq.com/cgi-bin/ticket/getticket';
@@ -11,11 +13,21 @@ const noop = () => {};
 
 export default (config) => {
 	const {
-		appId,
-		secret,
+		appId, // Weixin APP ID
+		secret, // Weixin secret
 		pathName = '/jssdk',
+		fetchTicket, // Custom fetch ticket function, must return a promise;
 		onError = noop,
 	} = config;
+
+	const isFetchTicketValid = typeof fetchTicket === 'function';
+
+	invariant(appId, `[${packageName}] missing param: ${appId}`);
+	invariant(secret || isFetchTicketValid,
+		/* eslint-disable */
+		`[${packageName}] You must declare at least one of "secret" or "fetchTicket"`
+		/* eslint-enable */
+	);
 
 	let ticketCache = '';
 	let lastRequestTime = 0;
@@ -30,16 +42,19 @@ export default (config) => {
 	//token
 	const fetchToken = () => {
 		const queryStirng =
-			`grant_type=client_credential&appid=${appId}&secret=${secret}`;
+			`grant_type=client_credential&appid=${appId}&secret=${secret}`
+		;
 
 		return fetch(`${TOKEN_URL}?${queryStirng}`).then((res) => res.json());
 	};
 
 	//ticket
-	const fetchTicket = (token) => {
-		const queryStirng = `access_token=${token}&type=jsapi`;
+	const defaultFetchTicket = async () => {
+		const { access_token } = await fetchToken();
+		const queryStirng = `access_token=${access_token}&type=jsapi`;
 		lastRequestTime = createTimeStamp();
-		return fetch(`${TICKET_URL}?${queryStirng}`).then((res) => res.json());
+		const res = await fetch(`${TICKET_URL}?${queryStirng}`);
+		return res.json();
 	};
 
 	//signature
@@ -54,7 +69,7 @@ export default (config) => {
 	router.get(pathName, function *() {
 		try {
 			const timestamp = createTimeStamp();
-			const isExpire = !!(timestamp - lastRequestTime > expiresIn);
+			const isExpire = timestamp - lastRequestTime > expiresIn;
 			const nonceStr = createNonceStr();
 			const { url } = this.query;
 			let ticket = '';
@@ -64,12 +79,13 @@ export default (config) => {
 				ticket = ticketCache;
 			}
 			else {
-				const { access_token } = yield fetchToken();
-				const { expires_in, ticket: _ticket } = yield fetchTicket(access_token);
+				const getTicket = isFetchTicketValid ? fetchTicket : defaultFetchTicket;
+
+				const { expires_in, ticket: _ticket } = yield getTicket();
 
 				ticketCache = _ticket;
 				ticket = _ticket;
-				expiresIn = expires_in;
+				expiresIn = expires_in || 0;
 				lastRequestTime = createTimeStamp();
 			}
 

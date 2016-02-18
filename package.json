@@ -8,6 +8,12 @@
     "compile": "mkdir -p lib && babel src/index.js --out-file lib/index.js",
     "prepublish": "rimraf lib && mkdirp lib && npm run compile"
   },
+  "keywords": [
+    "weixin",
+    "wechat",
+    "koa",
+    "jssdk"
+  ],
   "repository": {
     "type": "git",
     "url": "git@github.com:die-welle/koa-weixin-jssdk.git"
