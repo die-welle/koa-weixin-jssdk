@@ -44,7 +44,25 @@ app.listen(port);
 
 ## Third-party weixin service
 
-Maybe you already have a Third-party weixin service and have a access token, you could use custom `fetchTicket` function instead of `secret`.
+Maybe you already have a Third-party weixin service and have a access token, you could use custom `fetchTicket` or `fetchToken` function instead of `secret`.
+
+The `fetchToken` function must return `{ access_token }` as a Promise instance.
+
+```js
+
+app.use(weixinJSSDK({
+    appId: '<YOUR_APP_ID>', // [required]
+    
+    fetchToken() {
+        return Promise.resolve({ access_token: '<MY_ACCESS_TOKEN>' });
+    }
+ 
+    // other configs...
+
+}));
+
+```
+
 
 The `fetchTicket` function must return `{ ticket, expires_in }` as a Promise instance.
 
@@ -71,7 +89,7 @@ app.use(weixinJSSDK({
 Using [npm](https://www.npmjs.com/):
 
     $ npm install koa-weixin-jssdk --save
-
+ 
 
 ## License
 

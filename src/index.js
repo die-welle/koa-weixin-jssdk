@@ -17,15 +17,17 @@ export default (config) => {
 		secret, // Weixin secret
 		pathName = '/jssdk',
 		fetchTicket, // Custom fetch ticket function, must return a promise;
+		fetchToken, // Custom fetch ticket function, must return a promise;
 		onError = noop,
 	} = config;
 
 	const isFetchTicketValid = typeof fetchTicket === 'function';
+	const isFetchTokenValid = typeof fetchToken === 'function';
 
 	invariant(appId, `[${packageName}] missing param: ${appId}`);
-	invariant(secret || isFetchTicketValid,
+	invariant(secret || isFetchTicketValid || isFetchTokenValid,
 		/* eslint-disable */
-		`[${packageName}] You must declare at least one of "secret" or "fetchTicket"`
+		`[${packageName}] You must declare at least one of "secret" or "fetchTicket" or "fetchToken"`
 		/* eslint-enable */
 	);
 
@@ -40,7 +42,7 @@ export default (config) => {
 	const createNonceStr = () => Math.random().toString(36).substr(2, 15);
 
 	//token
-	const fetchToken = () => {
+	const defaultFetchToken = () => {
 		const queryStirng =
 			`grant_type=client_credential&appid=${appId}&secret=${secret}`
 		;
@@ -50,7 +52,8 @@ export default (config) => {
 
 	//ticket
 	const defaultFetchTicket = async () => {
-		const { access_token } = await fetchToken();
+		const getToken = isFetchTokenValid ? fetchToken : defaultFetchToken;
+		const { access_token } = await getToken();
 		const queryStirng = `access_token=${access_token}&type=jsapi`;
 		lastRequestTime = createTimeStamp();
 		const res = await fetch(`${TICKET_URL}?${queryStirng}`);
