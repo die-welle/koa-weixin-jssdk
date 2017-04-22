@@ -34,14 +34,6 @@
             "anonymous": "always",
             "named": "never"
         }],
-        "max-len": [1, {
-            "code": 80,
-            "tabWidth": 2,
-            "ignoreComments": true,
-            "ignoreStrings": true,
-            "ignoreUrls": true,
-            "ignoreRegExpLiterals": true,
-        }],
         "brace-style": 0,
         "operator-linebreak": [1, "after"],
         "camelcase": 0,

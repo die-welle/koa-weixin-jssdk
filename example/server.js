@@ -27,13 +27,7 @@ catch (err) {
 	process.exit(1);
 }
 
-app.use(weixinJSSDK({
-	...weixinConfig,
-	onError: (err, ctx) => {
-		console.error(err);
-		ctx.body = 'error';
-	},
-}));
+app.use(weixinJSSDK(weixinConfig));
 
 app.listen(port, () => outputHost({
 	port,
