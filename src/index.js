@@ -17,6 +17,7 @@ export default (config) => {
 		onGetTicket,
 		onSetTicket,
 		onError,
+		validURL,
 		tokenURL = 'https://api.weixin.qq.com/cgi-bin/token',
 		ticketURL = 'https://api.weixin.qq.com/cgi-bin/ticket/getticket',
 	} = config;
@@ -79,6 +80,10 @@ export default (config) => {
 			const timestamp = now();
 			const nonceStr = createNonceStr();
 			const url = ctx.query[urlKey];
+
+			if (isFunction(validURL) && !validURL(url)) {
+				throw new Error(`${url} is NOT a valid URL`);
+			}
 
 			const getTicket = async () => {
 				let cache;
