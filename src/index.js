@@ -27,7 +27,7 @@ export default (config) => {
 
 	invariant(appId, `[${packageName}] missing param: ${appId}`);
 	invariant(secret || useCustomFetchTicket || useCustomFetchToken,
-		`[${packageName}] You must declare at least one of "secret" or "fetchTicket" or "fetchToken"`
+		`[${packageName}] You must declare at least one of "secret", "fetchTicket" or "fetchToken"`
 	);
 
 	let ticketInRuntimeCache = '';
@@ -41,18 +41,20 @@ export default (config) => {
 	const createNonceStr = () => Math.random().toString(36).substr(2, 15);
 
 	//token
-	const defaultFetchToken = () => {
-		const queryStirng =
-			`grant_type=client_credential&appid=${appId}&secret=${secret}`
-		;
-
-		return fetch(`${tokenURL}?${queryStirng}`).then((res) => res.json());
+	const defaultFetchToken = async () => {
+		const queryStirng = `grant_type=client_credential&appid=${appId}&secret=${secret}`;
+		const res = await fetch(`${tokenURL}?${queryStirng}`);
+		return res.json();
 	};
 
 	//ticket
 	const defaultFetchTicket = async () => {
 		const fetchToken = useCustomFetchToken ? customFetchToken : defaultFetchToken;
+
+		// TODO: should cache `access_token`
+		// const { access_token, expires_in } = await fetchToken();
 		const { access_token } = await fetchToken();
+
 		const queryStirng = `access_token=${access_token}&type=jsapi`;
 		const res = await fetch(`${ticketURL}?${queryStirng}`);
 		return res.json();
@@ -117,6 +119,7 @@ export default (config) => {
 			ctx.body = { appId, timestamp, nonceStr, signature };
 		}
 		catch (error) {
+			console.log('error', error);
 			if (isFunction(onError)) { onError.call(ctx, error, ctx, next); }
 			else {
 				const { message = 'ERROR', code } = error;
