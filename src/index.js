@@ -1,5 +1,4 @@
 
-import Router from 'koa-router';
 import fetch from 'node-fetch';
 import JsSHA from 'jssha';
 import invariant from 'invariant';
@@ -8,7 +7,6 @@ import { name as packageName } from '../package.json';
 const TOKEN_URL = 'https://api.weixin.qq.com/cgi-bin/token';
 const TICKET_URL = 'https://api.weixin.qq.com/cgi-bin/ticket/getticket';
 
-const router = new Router();
 const noop = () => {};
 
 export default (config) => {
@@ -26,9 +24,9 @@ export default (config) => {
 
 	invariant(appId, `[${packageName}] missing param: ${appId}`);
 	invariant(secret || isFetchTicketValid || isFetchTokenValid,
-		/* eslint-disable */
+
+		// eslint-disable-next-line
 		`[${packageName}] You must declare at least one of "secret" or "fetchTicket" or "fetchToken"`
-		/* eslint-enable */
 	);
 
 	let ticketCache = '';
@@ -36,7 +34,7 @@ export default (config) => {
 	let expiresIn = 0;
 
 	// timestamp
-	const createTimeStamp = () => parseInt(new Date().getTime() / 1000) + '';
+	const createTimeStamp = () => Date.now().toString().slice(0, -3);
 
 	// noncestr
 	const createNonceStr = () => Math.random().toString(36).substr(2, 15);
@@ -69,12 +67,19 @@ export default (config) => {
 		return sha.getHash('HEX');
 	};
 
-	router.get(pathName, function *() {
+	return async (ctx, next) => {
+		const { path } = ctx.request;
+
+		if (path !== pathName) {
+			await next();
+			return;
+		}
+
 		try {
 			const timestamp = createTimeStamp();
 			const isExpire = timestamp - lastRequestTime > expiresIn;
 			const nonceStr = createNonceStr();
-			const { url } = this.query;
+			const { url } = ctx.query;
 			let ticket = '';
 			let signature = '';
 
@@ -84,7 +89,7 @@ export default (config) => {
 			else {
 				const getTicket = isFetchTicketValid ? fetchTicket : defaultFetchTicket;
 
-				const { expires_in, ticket: _ticket } = yield getTicket();
+				const { expires_in, ticket: _ticket } = await getTicket();
 
 				ticketCache = _ticket;
 				ticket = _ticket;
@@ -93,12 +98,10 @@ export default (config) => {
 			}
 
 			signature = calcSignature(ticket, nonceStr, timestamp, url);
-			this.body = { appId, timestamp, nonceStr, signature };
+			ctx.body = { appId, timestamp, nonceStr, signature };
 		}
 		catch (error) {
-			onError.call(this, error, this);
+			onError.call(ctx, error, ctx);
 		}
-	});
-
-	return router.middleware();
+	};
 };

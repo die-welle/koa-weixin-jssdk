@@ -1,11 +1,10 @@
 
-import koa from 'koa';
-import koaBody from 'koa-body';
+import Koa from 'koa';
 import weixinJSSDK from '../src';
 import outputHost from 'output-host';
 
 const port = process.env.PORT || 3000;
-const app = koa();
+const app = new Koa();
 
 let weixinConfig = {};
 const configFile = 'config.json';
@@ -28,7 +27,6 @@ catch (err) {
 	process.exit(1);
 }
 
-app.use(koaBody());
 app.use(weixinJSSDK({
 	...weixinConfig,
 	onError: (err, ctx) => {
