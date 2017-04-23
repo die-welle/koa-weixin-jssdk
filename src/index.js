@@ -1,7 +1,7 @@
 
-import fetch from 'node-fetch';
 import JsSHA from 'jssha';
 import invariant from 'invariant';
+import request from './request';
 import { name as packageName } from '../package.json';
 
 const isFunction = (f) => typeof f === 'function';
@@ -43,8 +43,7 @@ export default (config) => {
 	//token
 	const defaultFetchToken = async () => {
 		const queryStirng = `grant_type=client_credential&appid=${appId}&secret=${secret}`;
-		const res = await fetch(`${tokenURL}?${queryStirng}`);
-		return res.json();
+		return request(`${tokenURL}?${queryStirng}`);
 	};
 
 	//ticket
@@ -56,8 +55,7 @@ export default (config) => {
 		const { access_token } = await fetchToken();
 
 		const queryStirng = `access_token=${access_token}&type=jsapi`;
-		const res = await fetch(`${ticketURL}?${queryStirng}`);
-		return res.json();
+		return request(`${ticketURL}?${queryStirng}`);
 	};
 
 	//signature
@@ -91,7 +89,7 @@ export default (config) => {
 				let cache;
 
 				if (isFunction(onGetTicket)) {
-					cache = await onGetTicket();
+					cache = await onGetTicket(url);
 				}
 				else if (ticketInRuntimeCache) {
 					const hasExpired = timestamp - lastRequestTime > expiresIn;
@@ -119,7 +117,6 @@ export default (config) => {
 			ctx.body = { appId, timestamp, nonceStr, signature };
 		}
 		catch (error) {
-			console.log('error', error);
 			if (isFunction(onError)) { onError.call(ctx, error, ctx, next); }
 			else {
 				const { message = 'ERROR', code } = error;
