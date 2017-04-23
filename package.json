@@ -8,8 +8,8 @@
     "test": "jest",
     "example": "nodemon example -w src -w example",
     "prebuild": "rimraf lib && mkdir lib",
-    "build": "babel src/index.js -o lib/index.js",
-    "preversion": "npm run build"
+    "build": "babel src -d lib",
+    "preversion": "npm test && npm run build"
   },
   "keywords": [
     "weixin",
