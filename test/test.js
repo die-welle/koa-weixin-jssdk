@@ -140,6 +140,24 @@ test('should trigger `onSetTicket()` if `onGetTicket()` returns `falsy`', async 
 	expect(ctx.status).toBe(200);
 });
 
+test('should use cache if `onSetTicket()` is called', async () => {
+	let cache;
+	const onGetTicket = jest.fn(() => cache);
+	const onSetTicket = jest.fn((ticket) => (cache = ticket));
+	const config = createConfig({
+		secret: 'biubiubiu',
+		onGetTicket,
+		onSetTicket,
+	});
+	const middleware = weixinJSSDK(config);
+	await middleware(createCtx());
+	await middleware(createCtx());
+	expect(onGetTicket.mock.calls.length).toBe(2);
+
+	// the second time will use cache, so `onSetTicket` won't be triggered
+	expect(onSetTicket.mock.calls.length).toBe(1);
+});
+
 test('should call `fetchToken()`', async () => {
 	let config = {};
 	const fetchToken = jest.fn(() => {
@@ -147,10 +165,7 @@ test('should call `fetchToken()`', async () => {
 		const queryStirng = `grant_type=client_credential&appid=${appId}&secret=${secret}`;
 		return request(`${tokenURL}?${queryStirng}`);
 	});
-	config = createConfig({
-		secret: 'biubiubiu',
-		fetchToken,
-	});
+	config = createConfig({ fetchToken });
 	const ctx = createCtx();
 	const middleware = weixinJSSDK(config);
 	await middleware(ctx);
@@ -165,10 +180,7 @@ test('should call `fetchTicket()`', async () => {
 		const queryStirng = 'access_token=asdf&type=jsapi';
 		return request(`${ticketURL}?${queryStirng}`);
 	});
-	config = createConfig({
-		secret: 'biubiubiu',
-		fetchTicket,
-	});
+	config = createConfig({ fetchTicket });
 	const ctx = createCtx();
 	const middleware = weixinJSSDK(config);
 	await middleware(ctx);
