@@ -1,5 +1,4 @@
-koa-weixin-jssdk
-=========================
+# koa-weixin-jssdk
 
 koa weixin jssdk middleware
 
@@ -7,7 +6,6 @@ koa weixin jssdk middleware
 ## Quick Start
 
 ```js
-
 import koa from 'koa';
 import koaBody from 'koa-body';
 import weixinJSSDK from '../src';
@@ -24,63 +22,69 @@ app.use(weixinJSSDK({
  
     pathName: '/jssdk', // [optional] eg: http://imyourfather.com/jssdk
 
-    onError: (err, ctx) => {
+    onError: (err, ctx, next) => {
         console.error(err);
         ctx.body = 'error';
     },
 }));
 
 app.listen(port);
-
 ```
 
 
-## Example
+## Advanced Usage
 
-    $ git clone <this_git_repo>
-    $ npm i
-    $ npm start
+##### Custom store `access_token` and `ticket`
+
+By default, it would cache `access_token` and `ticket` in runtime memory, but you can store them in somewhere else.
+
+```js
+app.use(weixinJSSDK({
+    appId: '<YOUR_APP_ID>',
+    secret: '<YOUR_SECRET>',
+    async onGetToken(url) {
+        return redis.getAsync('ACCESS_TOKEN'); // this is an example
+    },
+    async onSetToken(token, expiresIn) {
+        return redis.setSync('ACCESS_TOKEN', token, { expiresIn });
+    },
+    async onGetTicket(url) {
+        return redis.getAsync('TICKET');
+    },
+    async onSetTicket(ticket, expiresIn) {
+        return redis.setSync('TICKET', ticket, { expiresIn });
+    },
+    // other configs...
+}));
+```
 
 
-## Third-party weixin service
+##### Third-party weixin service
 
 Maybe you already have a Third-party weixin service and have a access token, you could use custom `fetchTicket` or `fetchToken` function instead of `secret`.
 
-The `fetchToken` function must return `{ access_token }` as a Promise instance.
-
 ```js
-
 app.use(weixinJSSDK({
     appId: '<YOUR_APP_ID>', // [required]
-    
-    fetchToken() {
-        return Promise.resolve({ access_token: '<MY_ACCESS_TOKEN>' });
-    }
- 
+    async fetchToken() {
+        // await fetch(...)
+        return { access_token: '<MY_ACCESS_TOKEN>', expires_in: 7200 };
+    },
     // other configs...
-
 }));
-
 ```
 
-
-The `fetchTicket` function must return `{ ticket, expires_in }` as a Promise instance.
+Or `fetchTicket`
 
 ```js
-
 app.use(weixinJSSDK({
     appId: '<YOUR_APP_ID>', // [required]
-    
-    fetchTicket() {
-        return fetch(/* you_third_party_weixin_fetch_ticket_url */);
-        // Must return a promise;
-        // The responsed json must include `ticket` and `expires_in` fields.
-    }
- 
+    async fetchTicket() {
+        // await fetch(...)
+        return { ticket: 'TICKET', expires_in: 7200 };
+    },
     // other configs...
-
 }));
-
 ```
 
 
