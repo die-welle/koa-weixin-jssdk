@@ -1,5 +1,7 @@
 # koa-weixin-jssdk
 
+[![Build Status](https://travis-ci.org/die-welle/koa-weixin-jssdk.svg?branch=master)](https://travis-ci.org/die-welle/koa-weixin-jssdk)
+
 koa weixin jssdk middleware
 
 
@@ -7,13 +9,10 @@ koa weixin jssdk middleware
 
 ```js
 import koa from 'koa';
-import koaBody from 'koa-body';
 import weixinJSSDK from '../src';
 
 const port = process.env.PORT || 3000;
 const app = koa();
-
-app.use(koaBody());
 
 app.use(weixinJSSDK({
     appId: '<YOUR_APP_ID>', // [required] weixin-jssdk app id
