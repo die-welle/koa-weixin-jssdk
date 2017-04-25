@@ -37,6 +37,10 @@ export const startServer = (done) => {
 				expires_in: 7200,
 			};
 		})
+		.get('/error', (ctx) => {
+			ctx.status = 500;
+			ctx.body = 'ERROR';
+		})
 		.get('*', (ctx) => {
 			ctx.status = 404;
 			ctx.body = {

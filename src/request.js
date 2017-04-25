@@ -11,6 +11,5 @@ export default async function request(url) {
 		else { error.message = await res.text(); }
 		throw error;
 	}
-
 	return res[isJsonType ? 'json' : 'text']();
 }

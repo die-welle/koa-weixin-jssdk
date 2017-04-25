@@ -36,8 +36,19 @@ test('should trigger `onError` if fetch failed', async () => {
 		onError,
 	});
 	const middleware = weixinJSSDK(config);
-	const ctx = createCtx();
-	await middleware(ctx);
+	await middleware(createCtx());
+	expect(onError.mock.calls.length).toBe(1);
+});
+
+test('should trigger `onError` if server error', async () => {
+	const onError = jest.fn();
+	const config = createConfig({
+		secret: 'biubiubiu',
+		ticketURL: `${origin}/error`,
+		onError,
+	});
+	const middleware = weixinJSSDK(config);
+	await middleware(createCtx());
 	expect(onError.mock.calls.length).toBe(1);
 });
 
@@ -156,6 +167,75 @@ test('should use cache if `onSetTicket()` is called', async () => {
 
 	// the second time will use cache, so `onSetTicket` won't be triggered
 	expect(onSetTicket.mock.calls.length).toBe(1);
+});
+
+
+test('should trigger `onGetToken()`', async () => {
+	const url = 'http://awesome.com';
+	const onGetToken = jest.fn(() => Promise.resolve('fake_token'));
+	const config = createConfig({
+		secret: 'biubiubiu',
+		onGetToken,
+	});
+	const ctx = createCtx({ query: { url } });
+	const middleware = weixinJSSDK(config);
+	await middleware(ctx);
+	expect(onGetToken.mock.calls.length).toBe(1);
+	expect(ctx.status).toBe(200);
+});
+
+test('should not trigger `onSetToken()` if `onGetToken()` returns a `ticket`', async () => {
+	const onGetToken = () => false;
+	const onSetToken = jest.fn((ticket, expires_in) => {
+		expect(typeof ticket).toBe('string');
+		expect(typeof expires_in).toBe('number');
+	});
+	const config = createConfig({
+		secret: 'biubiubiu',
+		onGetToken,
+		onSetToken,
+	});
+	const ctx = createCtx();
+	const middleware = weixinJSSDK(config);
+	await middleware(ctx);
+	expect(onSetToken.mock.calls.length).toBe(1);
+	expect(ctx.status).toBe(200);
+});
+
+test('should trigger `onSetToken()` if `onGetToken()` returns `falsy`', async () => {
+	const onGetToken = () => false;
+	const onSetToken = jest.fn((ticket, expires_in) => {
+		expect(typeof ticket).toBe('string');
+		expect(typeof expires_in).toBe('number');
+	});
+	const config = createConfig({
+		secret: 'biubiubiu',
+		onGetToken,
+		onSetToken,
+	});
+	const ctx = createCtx();
+	const middleware = weixinJSSDK(config);
+	await middleware(ctx);
+	expect(onSetToken.mock.calls.length).toBe(1);
+	expect(ctx.status).toBe(200);
+});
+
+test('should use cache if `onSetToken()` is called', async () => {
+	let cache;
+	const onGetToken = jest.fn(() => cache);
+	const onSetToken = jest.fn((ticket) => (cache = ticket));
+	const config = createConfig({
+		secret: 'biubiubiu',
+		onGetToken,
+		onSetToken,
+	});
+	const middleware = weixinJSSDK(config);
+	await middleware(createCtx());
+	await middleware(createCtx());
+	expect(onGetToken.mock.calls.length).toBe(2);
+
+	// the second time will use cache, so `onSetToken` won't be triggered
+	expect(onSetToken.mock.calls.length).toBe(1);
 });
 
 test('should call `fetchToken()`', async () => {
