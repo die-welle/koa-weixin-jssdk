@@ -2,9 +2,9 @@
 import JsSHA from 'jssha';
 import invariant from 'invariant';
 import request from './request';
+import tap from './tap';
+import { isFunction, now } from './utils';
 import { name as packageName } from '../package.json';
-
-const isFunction = (f) => typeof f === 'function';
 
 export default (config) => {
 	const {
@@ -14,6 +14,8 @@ export default (config) => {
 		urlKey = 'url', // the query key of `url`
 		fetchTicket: customFetchTicket,
 		fetchToken: customFetchToken,
+		onGetToken,
+		onSetToken,
 		onGetTicket,
 		onSetTicket,
 		onError,
@@ -30,35 +32,29 @@ export default (config) => {
 		`[${packageName}] You must declare at least one of "secret", "fetchTicket" or "fetchToken"`
 	);
 
-	let ticketInRuntimeCache = '';
-	let lastRequestTime = 0;
-	let expiresIn = 0;
-
-	// timestamp
-	const now = () => Date.now().toString().slice(0, -3);
-
 	// noncestr
 	const createNonceStr = () => Math.random().toString(36).substr(2, 15);
 
-	//token
+	// token
 	const defaultFetchToken = async () => {
 		const queryStirng = `grant_type=client_credential&appid=${appId}&secret=${secret}`;
 		return request(`${tokenURL}?${queryStirng}`);
 	};
 
-	//ticket
+	// ticket
 	const defaultFetchTicket = async () => {
-		const fetchToken = useCustomFetchToken ? customFetchToken : defaultFetchToken;
+		const token = await tap({
+			name: 'access_token',
+			get: onGetToken,
+			set: onSetToken,
+			fetch: useCustomFetchToken ? customFetchToken : defaultFetchToken,
+		});
 
-		// TODO: should cache `access_token`
-		// const { access_token, expires_in } = await fetchToken();
-		const { access_token } = await fetchToken();
-
-		const queryStirng = `access_token=${access_token}&type=jsapi`;
+		const queryStirng = `access_token=${token}&type=jsapi`;
 		return request(`${ticketURL}?${queryStirng}`);
 	};
 
-	//signature
+	// signature
 	const calcSignature = (ticket, noncestr, ts, url) => {
 		const str = `jsapi_ticket=${ticket}&noncestr=${noncestr}&timestamp=${ts}&url=${url}`;
 		const sha = new JsSHA('SHA-1', 'TEXT');
@@ -85,33 +81,14 @@ export default (config) => {
 				throw new Error(`${url} is NOT a valid URL`);
 			}
 
-			const getTicket = async () => {
-				let cache;
-
-				if (isFunction(onGetTicket)) {
-					cache = await onGetTicket(url);
-				}
-				else if (ticketInRuntimeCache) {
-					const hasExpired = timestamp - lastRequestTime > expiresIn;
-					hasExpired && (cache = ticketInRuntimeCache);
-				}
-
-				if (cache) { return cache; }
-
-				const fetchTicket = useCustomFetchTicket ? customFetchTicket : defaultFetchTicket;
-				const { expires_in, ticket } = await fetchTicket();
-
-				if (isFunction(onSetTicket)) { await onSetTicket(ticket, expires_in); }
-				else {
-					ticketInRuntimeCache = ticket;
-					expiresIn = expires_in || 0;
-					lastRequestTime = now();
-				}
-
-				return ticket;
-			};
-
-			const ticket = await getTicket();
+			const ticket = await tap({
+				name: 'ticket',
+				timestamp,
+				get: onGetTicket,
+				set: onSetTicket,
+				fetch: useCustomFetchTicket ? customFetchTicket : defaultFetchTicket,
+				arg: url,
+			});
 
 			const signature = calcSignature(ticket, nonceStr, timestamp, url);
 			ctx.body = { appId, timestamp, nonceStr, signature };
